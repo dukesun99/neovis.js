@@ -5,13 +5,25 @@ export const ErrorEvent = 'error';
 
 export class EventController {
 
-	constructor() {
-		this._handlers = {
-			[CompletionEvent]: [],
-			[ErrorEvent]: [],
-			[ClickNodeEvent]: [],
-			[ClickEdgeEvent]: [],
-		};
+	/**
+	 *
+	 * @param {object} eventHandlers - event handles to be used
+	 */
+	constructor(eventHandlers) {
+		eventHandlers = eventHandlers || {};
+		const availableEvents = [CompletionEvent, ErrorEvent, ClickNodeEvent, ClickEdgeEvent];
+		let handlers = {};
+		for (const event of availableEvents) {
+			handlers = {
+				...handlers,
+				[event]: Array.isArray(eventHandlers[event]) ?
+					eventHandlers[event] :
+					eventHandlers[event] ?
+						[eventHandlers[event]] :
+						[],
+			};
+		}
+		this._handlers = handlers;
 	}
 
 	/**
