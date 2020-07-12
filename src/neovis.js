@@ -83,6 +83,35 @@ export default class NeoVis {
 		this._database = config.server_database;
 		this._query = config.initial_cypher || defaults.neo4j.initialQuery;
 		this._container = document.getElementById(config.container_id);
+		let eventHandlers = {
+			[ClickNodeEvent]: [],
+			[ClickEdgeEvent]: [],
+		};
+		for (let key of Object.keys(config.labels)) {
+			const onClickFunc = config.labels[key].click;
+			if (onClickFunc) {
+				if (typeof onClickFunc === 'function') {
+					eventHandlers[ClickNodeEvent].push((values) => {
+						if (values && typeof values === 'object' && values.node && values.node._neo4jLabel === key) {
+							onClickFunc(values);
+						}
+					});
+				}
+			}
+		}
+		for (let key of Object.keys(config.relationships)) {
+			const onClickFunc = config.relationships[key].click;
+			if (onClickFunc) {
+				if (typeof onClickFunc === 'function') {
+					eventHandlers[ClickEdgeEvent].push((values) => {
+						if (values && typeof values === 'object' && values.edge && values.edge._neo4jLabel === key) {
+							onClickFunc(values);
+						}
+					});
+				}
+			}
+		}
+		this._events = new EventController(eventHandlers);
 	}
 
 	_addNode(node) {
@@ -104,7 +133,7 @@ export default class NeoVis {
 	async buildNodeVisObject(neo4jNode, session = null) {
 		let node = {};
 		let label = neo4jNode.labels[0];
-
+		node._neo4jLabel = label;
 		let labelConfig = this._config && this._config.labels && (this._config.labels[label] || this._config.labels[NEOVIS_DEFAULT_CONFIG]);
 
 		const captionKey = labelConfig && labelConfig['caption'];
@@ -224,6 +253,7 @@ export default class NeoVis {
 		edge.id = r.identity.toInt();
 		edge.from = r.start.toInt();
 		edge.to = r.end.toInt();
+		edge._neo4jLabel = r.type;
 
 		// hover tooltip. show all properties in the format <strong>key:</strong> value
 		edge.title = '';
@@ -430,11 +460,13 @@ export default class NeoVis {
 					let neoVis = this;
 					this._network.on('click', function (params) {
 						if (params.nodes.length > 0) {
-							let nodeId = this.getNodeAt(params.pointer.DOM);
-							neoVis._events.generateEvent(ClickNodeEvent, {nodeId: nodeId, node: neoVis._nodes[nodeId]});
+							params.nodes.forEach((nodeId) => {
+								neoVis._events.generateEvent(ClickNodeEvent, {nodeId: nodeId, node: neoVis._nodes[nodeId]});
+							});
 						} else if (params.edges.length > 0) {
-							let edgeId = this.getEdgeAt(params.pointer.DOM);
-							neoVis._events.generateEvent(ClickEdgeEvent, {edgeId: edgeId, edge: neoVis._edges[edgeId]});
+							params.edges.forEach((edgeId) => {
+								neoVis._events.generateEvent(ClickEdgeEvent, {edgeId: edgeId, edge: neoVis._edges[edgeId]});
+							});
 						}
 					});
 				},
