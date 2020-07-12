@@ -299,8 +299,6 @@ var config = {
 
 #### `config.server_password`
 
-#### `config.server_database`
-
 ### `NeoVis.NEOVIS_DEFAULT_CONFIG`
 For both `config.labels` and `config.relationships` NeoVis.NEOVIS_DEFAULT_CONFIG 
 symbol can be added, which have the have the same properties as the normal config for specific 
@@ -317,11 +315,12 @@ import { NEOVIS_DEFAULT_CONFIG } from 'neovis.js';
     "caption": "name",
     "size": "pagerank",
     "community": "community",
-    //"image": 'https://visjs.org/images/visjs_logo.png',
-    //"font": {
-    //    "size":26,
-    //    "color":"#000000"
-    //},
+    "image": 'https://visjs.org/images/visjs_logo.png',
+    "font": {
+        "size":26,
+        "color":"#000000"
+    },
+    "click": (values) => {console.log(values.id)},
     "title_properties": [
         "name",
         "pagerank"
@@ -335,16 +334,19 @@ If `title_properties` is supplied, only the attributes listed in it are displaye
 Otherwise, all attributes are present in the tooltip.  
 If `image` is supplied, the node will appear as the image, otherwise a default dot will be displayed.  
 If `font` is supplied, the default font size configuration for node captions will be overwritten by the customized config. See `font` in [vis-network - nodes](https://visjs.github.io/vis-network/docs/network/nodes.html) for all available configuration for fonts.   
+If `click` is supplied with a function, each time a node is clicked the function will be called with an object containing information of the node.  
 #### `config.relationships`
 
 ```
 {
     "INTERACTS": {
         "thickness": "weight",
-        "caption": false
+        "caption": false,
+        "click": (values) => {console.log(values.id)},
     }
 }
 ```
+If `click` is supplied with a function, each time an edge is clicked the function will be called with an object containing information of the edge.  
 #### `config.arrows`
 
 Boolean. Defaults to false.
