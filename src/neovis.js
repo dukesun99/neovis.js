@@ -140,6 +140,7 @@ export default class NeoVis {
 		const captionKey = labelConfig && labelConfig['caption'];
 		const sizeKey = labelConfig && labelConfig['size'];
 		const sizeCypher = labelConfig && labelConfig['sizeCypher'];
+		const sizeFunction = labelConfig && labelConfig['sizeFunction'];
 		const communityKey = labelConfig && labelConfig['community'];
 		const imageUrl = labelConfig && labelConfig['image'];
 		const font = labelConfig && labelConfig['font'];
@@ -173,6 +174,8 @@ export default class NeoVis {
 			} finally {
 				session.close();
 			}
+		} else if (sizeFunction) {
+			node.value = sizeFunction(node.id);
 		} else if (typeof sizeKey === 'number') {
 			node.value = sizeKey;
 		} else {
@@ -312,7 +315,7 @@ export default class NeoVis {
 
 	// public API
 
-	render(query) {
+	render(query, oncomplete) {
 
 		// connect to Neo4j instance
 		// run query
@@ -475,6 +478,9 @@ export default class NeoVis {
 							});
 						}
 					});
+					if (typeof oncomplete === 'function') {
+						oncomplete();
+					}
 				},
 				onError: (error) => {
 					this._consoleLog(error, 'error');
@@ -544,8 +550,12 @@ export default class NeoVis {
 	 * This function will not change the original query given by renderWithCypher or the inital cypher.
 	 * @param query 
 	 */
-	updateWithCypher(query) {
-		this.render(query);
+	updateWithCypher(query, oncomplete) {
+		this.render(query, oncomplete);
+	}
+
+	getCurrentNodesAndEdges() {
+		return {nodes: this._nodes, edges: this._edges}
 	}
 
 // configure exports based on environment (ie Node.js or browser)
