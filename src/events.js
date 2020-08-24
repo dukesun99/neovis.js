@@ -1,6 +1,8 @@
 export const CompletionEvent = 'completed';
 export const ClickNodeEvent = 'clickNode';
 export const ClickEdgeEvent = 'clickEdge';
+export const DoubleClickNodeEvent = 'doubleClickNode';
+export const DoubleClickEdgeEvent = 'doubleClickEdge';
 export const ErrorEvent = 'error';
 
 export class EventController {
@@ -11,7 +13,7 @@ export class EventController {
 	 */
 	constructor(eventHandlers) {
 		eventHandlers = eventHandlers || {};
-		const availableEvents = [CompletionEvent, ErrorEvent, ClickNodeEvent, ClickEdgeEvent];
+		const availableEvents = [CompletionEvent, ErrorEvent, ClickNodeEvent, ClickEdgeEvent, DoubleClickNodeEvent, DoubleClickEdgeEvent];
 		let handlers = {};
 		for (const event of availableEvents) {
 			handlers = {

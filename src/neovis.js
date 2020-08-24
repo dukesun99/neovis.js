@@ -4,7 +4,7 @@ import Neo4j from 'neo4j-driver';
 import * as vis from 'vis-network/dist/vis-network.min';
 import 'vis-network/dist/vis-network.min.css';
 import { defaults } from './defaults';
-import { EventController, CompletionEvent, ClickEdgeEvent, ClickNodeEvent, ErrorEvent } from './events';
+import { EventController, CompletionEvent, ClickEdgeEvent, DoubleClickEdgeEvent, ClickNodeEvent, DoubleClickNodeEvent, ErrorEvent } from './events';
 
 export const NEOVIS_DEFAULT_CONFIG = Symbol();
 
@@ -88,6 +88,8 @@ export default class NeoVis {
 		let eventHandlers = {
 			[ClickNodeEvent]: [],
 			[ClickEdgeEvent]: [],
+			[DoubleClickNodeEvent]: [],
+			[DoubleClickEdgeEvent]: [],
 		};
 		for (let key of Object.keys(config.labels)) {
 			const onClickFunc = config.labels[key].click;
@@ -100,6 +102,16 @@ export default class NeoVis {
 					});
 				}
 			}
+			const onDoubleClickFunc = config.labels[key].doubleClick;
+			if (onDoubleClickFunc) {
+				if (typeof onDoubleClickFunc === 'function') {
+					eventHandlers[DoubleClickNodeEvent].push((values) => {
+						if (values && typeof values === 'object' && values.node && values.node._neo4jLabel === key) {
+							onDoubleClickFunc(values);
+						}
+					});
+				}
+			}
 		}
 		for (let key of Object.keys(config.relationships)) {
 			const onClickFunc = config.relationships[key].click;
@@ -108,6 +120,16 @@ export default class NeoVis {
 					eventHandlers[ClickEdgeEvent].push((values) => {
 						if (values && typeof values === 'object' && values.edge && values.edge._neo4jLabel === key) {
 							onClickFunc(values);
+						}
+					});
+				}
+			}
+			const onDoubleClickFunc = config.relationships[key].doubleClick;
+			if (onDoubleClickFunc) {
+				if (typeof onDoubleClickFunc === 'function') {
+					eventHandlers[DoubleClickEdgeEvent].push((values) => {
+						if (values && typeof values === 'object' && values.edge && values.edge._neo4jLabel === key) {
+							onDoubleClickFunc(values);
 						}
 					});
 				}
@@ -478,6 +500,18 @@ export default class NeoVis {
 							});
 						}
 					});
+
+					this._network.on('doubleClick', function (params) {
+						if (params.nodes.length > 0) {
+							params.nodes.forEach((nodeId) => {
+								neoVis._events.generateEvent(DoubleClickNodeEvent, {nodeId: nodeId, node: neoVis._nodes[nodeId]});
+							});
+						} else if (params.edges.length > 0) {
+							params.edges.forEach((edgeId) => {
+								neoVis._events.generateEvent(DoubleClickEdgeEvent, {edgeId: edgeId, edge: neoVis._edges[edgeId]});
+							});
+						}
+					});
 					if (typeof oncomplete === 'function') {
 						oncomplete();
 					}
@@ -555,7 +589,7 @@ export default class NeoVis {
 	}
 
 	getCurrentNodesAndEdges() {
-		return {nodes: this._nodes, edges: this._edges}
+		return {nodes: this._nodes, edges: this._edges};
 	}
 
 // configure exports based on environment (ie Node.js or browser)
