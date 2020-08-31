@@ -315,6 +315,8 @@ export default class NeoVis {
 		} else if (captionKey && typeof captionKey === 'string') {
 			if (typeof r.properties[captionKey] === 'number' || Neo4j.isInt(r.properties[captionKey])) {
 				edge.label = r.properties[captionKey].toString() || '';
+			} else if (Array.isArray(r.properties[captionKey])) {
+				edge.label = r.properties[captionKey].join(',');
 			} else {
 				edge.label = r.properties[captionKey] || '';
 			}
