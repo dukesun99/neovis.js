@@ -14,6 +14,7 @@ export default class NeoVis {
 	_data = {};
 	_network = null;
 	_events = new EventController();
+	_rightClickHandlers = {};
 
 	/**
 	 *
@@ -91,6 +92,7 @@ export default class NeoVis {
 			[DoubleClickNodeEvent]: [],
 			[DoubleClickEdgeEvent]: [],
 		};
+		let RightClickHandlers = {};
 		for (let key of Object.keys(config.labels)) {
 			const onClickFunc = config.labels[key].click;
 			if (onClickFunc) {
@@ -110,6 +112,19 @@ export default class NeoVis {
 							onDoubleClickFunc(values);
 						}
 					});
+				}
+			}
+
+			const onRightClickConfig = config.labels[key].rightClick;
+			if (onRightClickConfig) {
+				if (typeof onRightClickConfig === 'object') {
+					let nameList = [];
+					let nameHandlers = {};
+					for (let operationName of Object.keys(onRightClickConfig)) {
+						nameList.push(operationName);
+						nameHandlers[operationName] = onRightClickConfig[operationName];
+					}
+					RightClickHandlers[key] = [nameList, nameHandlers];
 				}
 			}
 		}
@@ -136,6 +151,7 @@ export default class NeoVis {
 			}
 		}
 		this._events = new EventController(eventHandlers);
+		this._rightClickHandlers = RightClickHandlers;
 	}
 
 	_addNode(node) {
@@ -517,6 +533,7 @@ export default class NeoVis {
 					if (typeof oncomplete === 'function') {
 						oncomplete();
 					}
+					this.registerRightClickEvent();
 				},
 				onError: (error) => {
 					this._consoleLog(error, 'error');
@@ -592,6 +609,51 @@ export default class NeoVis {
 
 	getCurrentNodesAndEdges() {
 		return {nodes: this._nodes, edges: this._edges};
+	}
+
+	registerRightClickEvent() {
+		let neovis = this;
+		this._network.on('oncontext', function (params) {
+			params.event.preventDefault();
+			$('.custom-menu').finish().toggle(100);
+			$('.custom-menu').css({
+				top: params.event.pageY + 'px',
+				left: params.event.pageX + 'px'
+			});
+			const selectedNodeID = neovis._network.getNodeAt(params.pointer.DOM);
+			if (selectedNodeID) {
+				const node = neovis._nodes[selectedNodeID];
+				const label = node._neo4jLabel;
+				$('.custom-menu').empty();
+				for (let item in neovis._rightClickHandlers[label][0]) {
+					const name = neovis._rightClickHandlers[label][0][item]
+					$('.custom-menu').append(`<li data-action="${name}">${name}</li>`);
+				}
+			}
+			// If the menu element is clicked
+			$('.custom-menu li').click(function(){
+				// This is the triggered action name
+				const selectedOperation = $(this).attr('data-action');
+				const node = neovis._nodes[selectedNodeID];
+				const label = node._neo4jLabel;
+				const operationFunc = neovis._rightClickHandlers[label][1][selectedOperation];
+				console.log(operationFunc);
+				if (typeof operationFunc === 'function') {
+					operationFunc(node);
+				}
+
+				// Hide it AFTER the action was triggered
+				$('.custom-menu').hide(100);
+			});
+		});
+		$(document).bind('mousedown', function (e) {
+			// If the clicked element is not the menu
+			if (!$(e.target).parents('.custom-menu').length > 0) {
+				// Hide it
+				$('.custom-menu').hide(100);
+			}
+		});
+		console.log('Register right click done');
 	}
 
 // configure exports based on environment (ie Node.js or browser)
